@@ -301,16 +301,18 @@ def viz_model_preds(version,
 
     dx, bx, _ = gen_dx_bx(grid_conf['xbound'], grid_conf['ybound'], grid_conf['zbound'])
     dx, bx = dx[:2].numpy(), bx[:2].numpy()
+    print(f"dx={dx}, bx={bx}") # dx=[0.5 0.5], bx=[-49.75 -49.75]
 
     scene2map = {}
     for rec in loader.dataset.nusc.scene:
         log = loader.dataset.nusc.get('log', rec['log_token'])
         scene2map[rec['name']] = log['location']
-
+    print(scene2map)
 
     val = 0.01
     fH, fW = final_dim
-    fig = plt.figure(figsize=(3*fW*val, (1.5*fW + 2*fH)*val))
+    print(f"fh={fH} fW={fW}")
+    fig = plt.figure(figsize=(3*fW*val, (1.5*fW + 2*fH)*val)) # figsize=(10.56, 7.84)
     gs = mpl.gridspec.GridSpec(3, 3, height_ratios=(1.5*fW, fH, fH))
     gs.update(wspace=0.0, hspace=0.0, left=0.0, right=1.0, top=1.0, bottom=0.0)
 
@@ -318,6 +320,14 @@ def viz_model_preds(version,
     counter = 0
     with torch.no_grad():
         for batchi, (imgs, rots, trans, intrins, post_rots, post_trans, binimgs) in enumerate(loader):
+            
+            print('imgs.shape', imgs.shape) # [4, 6, 3, 128, 352] [batch camera rgb h w]
+            print('rots', rots.shape) # [4, 6, 3, 3]
+            print('trans', trans.shape) # [4, 6, 3]
+            print('intrins', intrins.shape) # [4, 6, 3, 3]
+            print('post_rots', post_rots.shape) # [4, 6, 3, 3]
+            print('post_trans', post_trans.shape) # [4, 6, 3]
+
             out = model(imgs.to(device),
                     rots.to(device),
                     trans.to(device),
@@ -325,11 +335,16 @@ def viz_model_preds(version,
                     post_rots.to(device),
                     post_trans.to(device),
                     )
-            out = out.sigmoid().cpu()
+            out = out.sigmoid().cpu() 
+            #print(out.shape) [4, 1, 200, 200]
+            #print(out.dtype) torch.float32
 
             for si in range(imgs.shape[0]):
                 plt.clf()
+                # 6 camera
                 for imgi, img in enumerate(imgs[si]):
+                    # (1,0) (1,1) (1,2)
+                    # (2,0) (2,1) (2,2)
                     ax = plt.subplot(gs[1 + imgi // 3, imgi % 3])
                     showimg = denormalize_img(img)
                     # flip the bottom images
@@ -338,6 +353,7 @@ def viz_model_preds(version,
                     plt.imshow(showimg)
                     plt.axis('off')
                     plt.annotate(cams[imgi].replace('_', ' '), (0.01, 0.92), xycoords='axes fraction')
+
 
                 ax = plt.subplot(gs[0, :])
                 ax.get_xaxis().set_ticks([])
@@ -350,12 +366,13 @@ def viz_model_preds(version,
                 ], loc=(0.01, 0.86))
                 plt.imshow(out[si].squeeze(0), vmin=0, vmax=1, cmap='Blues')
 
-                # plot static map (improves visualization)
-                rec = loader.dataset.ixes[counter]
+                add_ego(bx, dx)                
+                # plot static map (improves visualization)                
+                rec = loader.dataset.ixes[counter] # nuscene record (token, timestamp, prev, next, scene_token, data(CAM_FRONT, ...))                                
                 plot_nusc_map(rec, nusc_maps, loader.dataset.nusc, scene2map, dx, bx)
                 plt.xlim((out.shape[3], 0))
                 plt.ylim((0, out.shape[3]))
-                add_ego(bx, dx)
+                
 
                 imname = f'eval{batchi:06}_{si:03}.jpg'
                 print('saving', imname)
