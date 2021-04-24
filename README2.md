@@ -13,6 +13,5 @@
     python3 main.py train v1.0-mini --dataroot=/data/datasets/nuscene --logdir=./runs --gpuid=0 tensorboard --logdir=./runs --bind_all
     python main.py train v1.0-trainval --dataroot=/data/datasets/nuscene --logdir=./runs --gpuid=0 tensorboard --logdir=./runs --bind_all
 
-
     ffmpeg -r 30 -s 1056x784 -pattern_type glob -i '*.jpg' -vcodec libx264 -crf 25  -pix_fmt yuv420p eval.mp4
     ffmpeg -r 30 -s 1056x784 -pattern_type glob -i '*.jpg' -c:v h264_nvenc eval_nvenc.mp4
