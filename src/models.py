@@ -41,6 +41,7 @@ class CamEncode(nn.Module):
         self.C = C
 
         self.trunk = EfficientNet.from_pretrained("efficientnet-b0")
+        #self.trunk.set_swish(memory_efficient=False)
 
         self.up1 = Up(320+112, 512)
         self.depthnet = nn.Conv2d(512, self.D + self.C, kernel_size=1, padding=0)

@@ -378,3 +378,49 @@ def viz_model_preds(version,
                 print('saving', imname)
                 plt.savefig(imname)
                 counter += 1
+
+
+def export_model(version,
+                    modelf,
+                    dataroot='/data/nuscenes',
+                    map_folder='/data/nuscenes/mini',
+                    gpuid=1,
+                    viz_train=False,
+
+                    H=900, W=1600,
+                    resize_lim=(0.193, 0.225),
+                    final_dim=(128, 352),
+                    bot_pct_lim=(0.0, 0.22),
+                    rot_lim=(-5.4, 5.4),
+                    rand_flip=True,
+
+                    xbound=[-50.0, 50.0, 0.5],
+                    ybound=[-50.0, 50.0, 0.5],
+                    zbound=[-10.0, 10.0, 20.0],
+                    dbound=[4.0, 45.0, 1.0],
+
+                    bsz=4,
+                    nworkers=10,
+                    ):
+    grid_conf = {
+        'xbound': xbound,
+        'ybound': ybound,
+        'zbound': zbound,
+        'dbound': dbound,
+    }
+    cams = ['CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+            'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT']
+    data_aug_conf = {
+                    'resize_lim': resize_lim,
+                    'final_dim': final_dim,
+                    'rot_lim': rot_lim,
+                    'H': H, 'W': W,
+                    'rand_flip': rand_flip,
+                    'bot_pct_lim': bot_pct_lim,
+                    'cams': cams,
+                    'Ncams': 5,
+                }
+    model = compile_model(grid_conf, data_aug_conf, outC=1)
+    model.load_state_dict(torch.load(modelf))
+    scripted_model = torch.jit.script(model)
+    scripted_model.save("lift_splat_shoot_model_scripted.pt")
