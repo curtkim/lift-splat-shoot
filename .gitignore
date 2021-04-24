@@ -137,3 +137,6 @@ imagenet_pretrained/
 *.csv
 
 *.mp4
+
+.idea
+
